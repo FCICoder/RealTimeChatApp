@@ -1,7 +1,8 @@
 import { useState } from "react";
 import "./ChatList.css";
+import AddUser from "../../addUser/AddUser";
 const ChatList = () => {
-    const [addMode , setAddMode] = useState(false);
+  const [addMode, setAddMode] = useState(false);
   return (
     <>
       <div className="ChatList">
@@ -10,39 +11,44 @@ const ChatList = () => {
             <img src="/search.png" alt="" />
             <input type="text" placeholder="Search" />
           </div>
-          <img src={addMode ? "./minus.png" : "./plus.png"} alt="" className="add"
-          onClick={()=> setAddMode((prev) => !prev)}/>
+          <img
+            src={addMode ? "./minus.png" : "./plus.png"}
+            alt=""
+            className="add"
+            onClick={() => setAddMode((prev) => !prev)}
+          />
         </div>
         <div className="item">
-            <img src="./avatar.png" alt="" />
-            <div className="texts">
-                <span>John Doe</span>
-                <p>Hello</p>
-            </div>
+          <img src="./avatar.png" alt="" />
+          <div className="texts">
+            <span>John Doe</span>
+            <p>Hello</p>
+          </div>
         </div>
 
         <div className="item">
-            <img src="./avatar.png" alt="" />
-            <div className="texts">
-                <span>John Doe</span>
-                <p>Hello</p>
-            </div>
+          <img src="./avatar.png" alt="" />
+          <div className="texts">
+            <span>John Doe</span>
+            <p>Hello</p>
+          </div>
         </div>
         <div className="item">
-            <img src="./avatar.png" alt="" />
-            <div className="texts">
-                <span>John Doe</span>
-                <p>Hello</p>
-            </div>
+          <img src="./avatar.png" alt="" />
+          <div className="texts">
+            <span>John Doe</span>
+            <p>Hello</p>
+          </div>
         </div>
         <div className="item">
-            <img src="./avatar.png" alt="" />
-            <div className="texts">
-                <span>John Doe</span>
-                <p>Hello</p>
-            </div>
+          <img src="./avatar.png" alt="" />
+          <div className="texts">
+            <span>John Doe</span>
+            <p>Hello</p>
+          </div>
         </div>
       </div>
+      {addMode &&  <AddUser />}
     </>
   );
 };
