@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import "./ChatList.css";
 import AddUser from "../../addUser/AddUser";
 import { useUserStore } from "../../../lib/userStor";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 const ChatList = () => {
   const [addMode, setAddMode] = useState(false);
@@ -11,26 +11,25 @@ const ChatList = () => {
   const {currentUser } = useUserStore();
   useEffect(()=>{
     const unSub = onSnapshot (doc(db, "userchats" , currentUser.id),async (res)=>{
-      const items =  res.data().chats;
-      const promisses =items.map( async (item) => {
-        const userDocRef = doc(db, "users", item.receverId)
+      const items =  res.data()?.chats;
+      const promisses =items?.map( async (item) => {
+        const userDocRef = doc(db, "users", item.receiverId);
         const userDocSnap = await getDoc(userDocRef);
         
-        const user = userDocSnap.data();
+        const user = userDocSnap?.data();
 
         return {...item, user}
       })
       const chatData = await Promise.all(promisses);
-      setChats(chatData.sort( (a , b)=> b.updatedAt - a.updatedAt ));
+      setChats(chatData?.sort( (a , b)=> b.updatedAt - a.updatedAt ));
     });
 
     return ()=>{
       unSub();
     }
-  },[currentUser.id])
+  },[currentUser?.id])
 
-  return (
-    <>
+  return <>
       <div className="ChatList">
         <div className="search">
           <div className="searchBar">
@@ -45,22 +44,19 @@ const ChatList = () => {
           />
         </div>
 
-        {chats.map((chats, index) =><>
-          <div className="item" key={index} >
-          <img src="./avatar.png" alt="" />
+        {chats?.map((chats, index) =><div className="item" key={index} >
+          <img src={chats.user.avatar || "./avatar.png"} alt="" />
           <div className="texts">
-            <span>John Doe</span>
+            <span>{chats.user.username}</span>
             <p>{chats.lastMessage}</p>
           </div>
         </div>
-
-        </>
         )}
         
         {addMode &&  <AddUser />}        
       </div>
     </>
-  );
+  
 };
 
 export default ChatList;

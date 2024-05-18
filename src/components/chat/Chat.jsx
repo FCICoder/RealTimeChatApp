@@ -1,15 +1,27 @@
 import EmojiPicker from "emoji-picker-react";
 import "./Chat.css";
 import { useEffect, useRef, useState } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../../lib/firebase";
 
 const Chat = () => {
+  const [chat, setChat] = useState(null);
   const [open, setopen] = useState(false);
   const [Text, setText] = useState("");
-const endRef = useRef(null);
+  const endRef = useRef(null);
 
-useEffect(()=>{
-  endRef.current.scrollIntoView({ behavior: "smooth" });
-},[])
+  useEffect(() => {
+    endRef.current.scrollIntoView({ behavior: "smooth" });
+  }, []);
+  useEffect(() => {
+    const unSub = onSnapshot(doc(db, "chats" , "85VNNfexa8RB2x3XKJ2t") , (res) => {
+      setChat(res.data())
+    })
+    return () => {
+      unSub();
+    }
+  }, []);
+  console.log(chat);
   const handleEmoji = (event) => {
     setText((prev) => prev + event.emoji);
     setopen(false);
@@ -66,7 +78,10 @@ useEffect(()=>{
 
           <div className="message own">
             <div className="texts">
-              <img src="https://images.pexels.com/photos/33109/fall-autumn-red-season.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="" />
+              <img
+                src="https://images.pexels.com/photos/33109/fall-autumn-red-season.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                alt=""
+              />
               <p>
                 Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quis
                 modi veritatis similique minus rerum.

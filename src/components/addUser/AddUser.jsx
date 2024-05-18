@@ -44,6 +44,15 @@ const AddUser = () => {
                 })
             })
 
+            // await updateDoc(doc(userChatsRef , currentUser.id), {
+            //     chats:arrayUnion({
+            //         chatId: newChatRef.id,
+            //         lastMessage: "",
+            //         receiverId : user.id,
+            //         updatedAt: Date.now()
+            //     })
+            // })
+
             await updateDoc(doc(userChatsRef , currentUser.id), {
                 chats:arrayUnion({
                     chatId: newChatRef.id,
@@ -55,12 +64,12 @@ const AddUser = () => {
 
             console.log(newChatRef.id);
         }catch(err){
-            console.log(err);
+            // console.log(err);
         }
     }
     return<>
     <div className="addUser">
-        <form onSubmit={(e)=>handleSearch(e)} >
+        <form onSubmit={handleSearch} >
             <input type="text" placeholder='UserName' name='username' />
             <button>Search</button>
         </form>
