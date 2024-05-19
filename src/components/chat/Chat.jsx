@@ -1,30 +1,73 @@
 import EmojiPicker from "emoji-picker-react";
 import "./Chat.css";
 import { useEffect, useRef, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { arrayUnion, doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { useChatStore } from "../../lib/chatStore";
+import { useUserStore } from "../../lib/userStor";
 
 const Chat = () => {
   const [chat, setChat] = useState(null);
   const [open, setopen] = useState(false);
   const [Text, setText] = useState("");
-  const endRef = useRef(null);
+  const [image, setImage] = useState("");
 
+  const endRef = useRef(null);
+  const { chatId, user } = useChatStore();
+  const { currentUser } = useUserStore();
   useEffect(() => {
     endRef.current.scrollIntoView({ behavior: "smooth" });
   }, []);
   useEffect(() => {
-    const unSub = onSnapshot(doc(db, "chats" , "85VNNfexa8RB2x3XKJ2t") , (res) => {
-      setChat(res.data())
-    })
+    const unSub = onSnapshot(doc(db, "chats", chatId), (res) => {
+      setChat(res.data());
+    });
     return () => {
       unSub();
-    }
-  }, []);
+    };
+  }, [chatId]);
   console.log(chat);
   const handleEmoji = (event) => {
     setText((prev) => prev + event.emoji);
     setopen(false);
+  };
+
+  const handleSend = async () => {
+    if (Text === "") return;
+
+    try {
+      await updateDoc(doc(db, "chats", chatId), {
+        messages: arrayUnion({
+          Text,
+          createdAt: new Date(),
+          senderId: currentUser.id,
+        }),
+      });
+
+      const userIDs = [currentUser.id, user.id];
+
+      userIDs.forEach(async (id) => {
+        const userChatRef = doc(db, "userchats", id);
+        const userChatsSnapshot = await getDoc(userChatRef);
+
+        if (userChatsSnapshot.exists()) {
+          const userChatsData = userChatsSnapshot.data();
+          const chatIndex = userChatsData.chats.findIndex(
+            (chat) => chat.chatId === chatId
+          );
+
+          userChatsData.chats[chatIndex].lastMessage = Text;
+          userChatsData.chats[chatIndex].isSeen = id === currentUser.id? true: false;
+          userChatsData.chats[chatIndex].updatedAt = Date.now();
+
+          await updateDoc(userChatRef, {
+            chats: userChatsData.chats,
+          });
+        }
+      });
+    } catch (err) {
+      console.log(err);
+    }
   };
   return (
     <>
@@ -44,51 +87,14 @@ const Chat = () => {
           </div>
         </div>
         <div className="center">
-          <div className="message">
-            <img src="./avatar.png" alt="" />
-            <div className="texts">
-              <p>
-                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quis
-                modi veritatis similique minus rerum.
-              </p>
-              <span>1 min ago</span>
+          {chat?.messages?.map((message) => <div className="message own" key={message.createdAt}>
+              <div className="texts">
+                {message.img && <img src={message.img} alt="" />}
+                <p>{message.Text}</p>
+                <span>1 min ago</span>
+              </div>
             </div>
-          </div>
-
-          <div className="message own">
-            <div className="texts">
-              <p>
-                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quis
-                modi veritatis similique minus rerum.
-              </p>
-              <span>1 min ago</span>
-            </div>
-          </div>
-
-          <div className="message">
-            <img src="./avatar.png" alt="" />
-            <div className="texts">
-              <p>
-                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quis
-                modi veritatis similique minus rerum.
-              </p>
-              <span>1 min ago</span>
-            </div>
-          </div>
-
-          <div className="message own">
-            <div className="texts">
-              <img
-                src="https://images.pexels.com/photos/33109/fall-autumn-red-season.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                alt=""
-              />
-              <p>
-                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quis
-                modi veritatis similique minus rerum.
-              </p>
-              <span>1 min ago</span>
-            </div>
-          </div>
+          )}
           <div ref={endRef}></div>
         </div>
 
@@ -114,7 +120,9 @@ const Chat = () => {
               <EmojiPicker open={open} onEmojiClick={handleEmoji} />
             </div>
           </div>
-          <button className="sendButton">Send</button>
+          <button className="sendButton" onClick={handleSend}>
+            Send
+          </button>
         </div>
       </div>
     </>
