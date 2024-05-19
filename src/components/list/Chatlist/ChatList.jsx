@@ -51,9 +51,11 @@ const ChatList = () => {
         chats: userChats,
       });
       changeChat(chat.chatId, chat.user);
+      console.log(chats);
     } catch (err) {
       console.log(err);
     }
+  
   };
 
   return (
@@ -81,9 +83,9 @@ const ChatList = () => {
               backgroundColor: chats?.isSeen ? "transparent" : "#5183fe",
             }}
           >
-            <img src={chats.user.avatar || "./avatar.png"} alt="" />
+            <img src={chats.user.blocked.includes(currentUser?.id)?"./avatar.png" :  chats.user.avatar || "./avatar.png"} alt="" />
             <div className="texts">
-              <span>{chats.user.username}</span>
+              <span>{chats.user.blocked.includes(currentUser?.id) ? "User" : chats.user.username}</span>
               <p>{chats.lastMessage}</p>
             </div>
           </div>

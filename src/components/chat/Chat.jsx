@@ -1,19 +1,38 @@
 import EmojiPicker from "emoji-picker-react";
 import "./Chat.css";
 import { useEffect, useRef, useState } from "react";
-import { arrayUnion, doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import {
+  arrayUnion,
+  doc,
+  getDoc,
+  onSnapshot,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useChatStore } from "../../lib/chatStore";
 import { useUserStore } from "../../lib/userStor";
+import upload from "../../lib/upload";
 
 const Chat = () => {
   const [chat, setChat] = useState(null);
   const [open, setopen] = useState(false);
   const [Text, setText] = useState("");
-  const [image, setImage] = useState("");
+  const [image, setImage] = useState({
+    file: null,
+    URL: "",
+  });
+
+  const handleImage = (e) => {
+    if (e.target.files[0]) {
+      setImage({
+        file: e.target.files[0],
+        URL: URL.createObjectURL(e.target.files[0]),
+      });
+    }
+  };
 
   const endRef = useRef(null);
-  const { chatId, user } = useChatStore();
+  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, changeBlock } = useChatStore();
   const { currentUser } = useUserStore();
   useEffect(() => {
     endRef.current.scrollIntoView({ behavior: "smooth" });
@@ -34,13 +53,17 @@ const Chat = () => {
 
   const handleSend = async () => {
     if (Text === "") return;
-
+    let imgUrl = null;
     try {
+      if (image.file) {
+        imgUrl = await upload(image.file);
+      }
       await updateDoc(doc(db, "chats", chatId), {
         messages: arrayUnion({
           Text,
           createdAt: new Date(),
           senderId: currentUser.id,
+          ...(imgUrl && { image: imgUrl }),
         }),
       });
 
@@ -57,7 +80,8 @@ const Chat = () => {
           );
 
           userChatsData.chats[chatIndex].lastMessage = Text;
-          userChatsData.chats[chatIndex].isSeen = id === currentUser.id? true: false;
+          userChatsData.chats[chatIndex].isSeen =
+            id === currentUser.id ? true : false;
           userChatsData.chats[chatIndex].updatedAt = Date.now();
 
           await updateDoc(userChatRef, {
@@ -68,15 +92,21 @@ const Chat = () => {
     } catch (err) {
       console.log(err);
     }
+
+    setImage({
+      file: null,
+      URL: "",
+    });
+    setText("");
   };
   return (
     <>
       <div className="chat">
         <div className="top">
           <div className="user">
-            <img src="./avatar.png" alt="" />
+            <img src={user?.avatar || "./avatar.png"} alt="" />
             <div className="texts">
-              <span>Jhone Dhoe</span>
+              <span>{user?.username}</span>
               <p>Lorem ipsum dolor sit amet consectetur .</p>
             </div>
           </div>
@@ -87,11 +117,26 @@ const Chat = () => {
           </div>
         </div>
         <div className="center">
-          {chat?.messages?.map((message) => <div className="message own" key={message.createdAt}>
+          {chat?.messages?.map((message) => (
+            <div
+              className={
+                message?.senderId === currentUser?.id
+                  ? "message own"
+                  : "message"
+              }
+              key={message.createdAt}
+            >
               <div className="texts">
                 {message.img && <img src={message.img} alt="" />}
                 <p>{message.Text}</p>
                 <span>1 min ago</span>
+              </div>
+            </div>
+          ))}
+          {image.URL && (
+            <div className="message own">
+              <div className="texts">
+                <img src={image.URL} alt="" />
               </div>
             </div>
           )}
@@ -100,15 +145,24 @@ const Chat = () => {
 
         <div className="bottom">
           <div className="icons">
-            <img src="./img.png" alt="" />
+            <label htmlFor="file">
+              <img src="./img.png" alt="" />
+            </label>
+            <input
+              type="file"
+              id="file"
+              style={{ display: "none" }}
+              onChange={handleImage}
+            />
             <img src="./camera.png" alt="" />
             <img src="./mic.png" alt="" />
           </div>
           <input
             value={Text}
             type="text"
-            placeholder="Type a message..."
+            placeholder={(isCurrentUserBlocked || isReceiverBlocked) ? "You cannot send a message" : "Type a message..."}
             onChange={(e) => setText(e.target.value)}
+            disabled={isCurrentUserBlocked || isReceiverBlocked}
           />
           <div className="emoji">
             <img
@@ -120,7 +174,7 @@ const Chat = () => {
               <EmojiPicker open={open} onEmojiClick={handleEmoji} />
             </div>
           </div>
-          <button className="sendButton" onClick={handleSend}>
+          <button className="sendButton" onClick={handleSend} disabled={isCurrentUserBlocked || isReceiverBlocked} >
             Send
           </button>
         </div>
